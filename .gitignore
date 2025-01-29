@@ -1,0 +1,38 @@
+#  Python / Bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class
+
+#  Virtual Environments
+.venv/
+venv/
+env/
+
+#  Environment / Secrets
+.env
+*.env
+
+#  Log Files
+*.log
+
+#  OS / Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+
+#  Git
+.git
+#.gitignore
+
+#  Tests
+tests/
+test*.py
+
+# Ignore Github Actions
+.github/
+
+
+transcription*.txt
+transcripts/*.txt
