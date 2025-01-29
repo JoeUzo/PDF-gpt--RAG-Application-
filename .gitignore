@@ -32,7 +32,4 @@ test*.py
 
 # Ignore Github Actions
 .github/
-
-
-transcription*.txt
-transcripts/*.txt
+pdf-samples/
