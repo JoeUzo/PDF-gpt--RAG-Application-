@@ -15,8 +15,8 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build . \
-          --file Dockerfile \
+        docker build ./pdf-gpt/ \
+          --file ./pdf-gpt/Dockerfile \
           --tag joeuzo/pdf-gpt:test-$(echo ${{ github.sha }} | cut -c1-7)
 
   push:
@@ -28,8 +28,8 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build . \
-          --file Dockerfile \
+        docker build ./pdf-gpt/ \
+          --file ./pdf-gpt/Dockerfile \
           --tag joeuzo/pdf-gpt:$(echo ${{ github.sha }} | cut -c1-7) \
           --tag joeuzo/pdf-gpt:latest
           
