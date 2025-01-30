@@ -1,9 +1,7 @@
 from langchain_community.document_loaders import PDFPlumberLoader
-from langchain_community.document_loaders import UnstructuredPDFLoader
+# from langchain_community.document_loaders import UnstructuredPDFLoader
 
 # Load a PDF document   
-pdf_doc = "./pdf-samples/sample1.pdf"
-loader = PDFPlumberLoader(pdf_doc)
 # loader = UnstructuredPDFLoader(pdf_doc, strategy="fast")
 
 # docs = loader.load()

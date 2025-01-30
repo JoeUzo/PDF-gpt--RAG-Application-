@@ -7,10 +7,10 @@ from pdf import PDFLoader
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_core.runnables import RunnablePassthrough
 from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone
 
 # Load environment variables
 load_dotenv()
@@ -28,13 +28,34 @@ model = ChatOpenAI(model=MODEL)
 parser = StrOutputParser()
 embeddings = OpenAIEmbeddings()
 
+pc = Pinecone(api_key=PINECONE_API_KEY)
+pinecone_index = pc.Index(INDEX_NAME)
 
-def load_pdf_and_create_store(pdf_file, user_id):
-    """Load PDF and create Pinecone store under a namespace = user_id."""
+
+def delete_namespace(username):
+    """Delete a namespace from Pinecone."""
+    # Get index statistics
+    stats = pinecone_index.describe_index_stats()
+
+    # Extract namespaces
+    namespaces = stats.get("namespaces", {}).keys()
+
+    # Delete namespace if it exists
+    if username in namespaces: 
+        pinecone_index.delete(deleteAll=True, namespace=username)
+
+
+def load_pdf_and_create_store(pdf_file, username):
+    """Load PDF and create Pinecone store under a namespace = username."""
     loader = PDFLoader(pdf_file.name)
     docs = loader.load()
+
+    # Delete existing namespace if it exists
+    delete_namespace(username)
+
+    # Create Pinecone store
     pinecone_store = PineconeVectorStore.from_documents(
-        docs, embedding=embeddings, index_name=INDEX_NAME, namespace=user_id
+        docs, embedding=embeddings, index_name=INDEX_NAME, namespace=username
     )
     return pinecone_store
 
@@ -50,21 +71,12 @@ def chain_invoke(pinecone_store, question):
     return chain.invoke(question)
 
 
-def chat_interface(pdf_file, user_id, user_message, history, pinecone_store):
-    """
-    Gradio chat callback.
-
-    - pdf_file: Uploaded PDF object
-    - user_id: ID for user (namespace in Pinecone)
-    - user_message: The question typed by the user
-    - history: Current chat history in OpenAI-style messages format
-    - pinecone_store: The Pinecone vector store (None if not created yet)
-    """
+def chat_interface(pdf_file, username, user_message, history, pinecone_store):
     # Create pinecone store if not yet created
     if pinecone_store is None:
         if pdf_file is None:
             return "Please upload a PDF first.", history, pinecone_store
-        pinecone_store = load_pdf_and_create_store(pdf_file, user_id)
+        pinecone_store = load_pdf_and_create_store(pdf_file, username)
 
     if not user_message:
         return "Please enter a question.", history, pinecone_store
@@ -92,13 +104,13 @@ def reset_session():
 with gr.Blocks() as demo:
     gr.Markdown("# PDF GPT Chat")
 
-    user_id = gr.Textbox(label="Username", placeholder="Enter username")
+    username = gr.Textbox(label="Username", placeholder="Enter username")
     pdf_file = gr.File(label="Upload PDF", file_types=[".pdf"])
 
     # Specify `type="messages"` to avoid the deprecation warning
     chatbot = gr.Chatbot(label="Chat", type="messages")
 
-    question = gr.Textbox(label="Ask a question", placeholder="Ask me anything about on the PDF file")
+    question = gr.Textbox(label="Ask a question", placeholder="Ask me anything about the PDF file")
     submit_btn = gr.Button("Send")
     reset_btn = gr.Button("Reset Session")
 
@@ -109,7 +121,7 @@ with gr.Blocks() as demo:
     # Main submit button: asks a question
     submit_btn.click(
         fn=chat_interface,
-        inputs=[pdf_file, user_id, question, history_state, pinecone_state],
+        inputs=[pdf_file, username, question, history_state, pinecone_state],
         outputs=[question, chatbot, pinecone_state],
     )
 
