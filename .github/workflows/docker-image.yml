@@ -7,44 +7,41 @@ on:
     branches: [ "master" ]
 
 jobs:
+
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: cd into pdf-gpt
-      run: cd ./pdf-gpt/
-
-    - name: Build Docker Image
-      run: |
-        docker build . \
-          --file Dockerfile \
-          --tag joeuzo/pdf-gpt:test-$(echo ${{ github.sha }} | cut -c1-7)
-
+      - name: Build Docker Image (Test)
+        working-directory: pdf-gpt/
+        run: |
+          docker build . \
+            -f Dockerfile \
+            -t joeuzo/pdf-gpt:test-${{ github.sha }} 
+            
   push:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: cd into pdf-gpt
-      run: cd ./pdf-gpt/
-      
-    - name: Build Docker Image
-      run: |
-        docker build . \
-          --file Dockerfile \
-          --tag joeuzo/pdf-gpt:$(echo ${{ github.sha }} | cut -c1-7) \
-          --tag joeuzo/pdf-gpt:latest
-          
+      - name: Build and Tag Docker Image
+        working-directory: pdf-gpt/
+        run: |
+          docker build . \
+            -f pdf-gpt/Dockerfile \
+            -t joeuzo/pdf-gpt:${{ github.sha }} \
+            -t joeuzo/pdf-gpt:latest 
 
-    - name: Log in to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Docker Hub login
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | \
+          docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Push Docker Image
-      run: |
-        docker push joeuzo/pdf-gpt:$(echo ${{ github.sha }} | cut -c1-7)
-        docker push joeuzo/pdf-gpt:latest
-        
+      - name: Push Docker Image
+        run: |
+          docker push joeuzo/pdf-gpt:${{ github.sha }}
+          docker push joeuzo/pdf-gpt:latest
