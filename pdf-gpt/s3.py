@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 s3_client = boto3.client("s3")
-BUCKET_NAME = "your-bucket"
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 def save_chat_history_to_s3(username, history):
     """Save the user's chat history as a JSON file in S3."""

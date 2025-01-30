@@ -1,7 +1,6 @@
-import gradio as gr
 import os
+import gradio as gr
 from dotenv import load_dotenv
-
 from template import template_
 from pdf import PDFLoader
 from langchain_openai.chat_models import ChatOpenAI
