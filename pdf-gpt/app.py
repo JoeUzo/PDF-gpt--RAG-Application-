@@ -100,7 +100,7 @@ def reset_session():
     return None, [], None
 
 
-with gr.Blocks() as demo:
+with gr.Blocks() as app:
     gr.Markdown("# PDF GPT Chat")
 
     username = gr.Textbox(label="Username", placeholder="Enter username")
@@ -131,4 +131,6 @@ with gr.Blocks() as demo:
         outputs=[pdf_file, chatbot, pinecone_state],
     )
 
-demo.launch()
+
+if __name__ == "__main__":
+    app.launch(server_name="0.0.0.0", server_port=5000)
