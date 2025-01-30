@@ -19,7 +19,7 @@ jobs:
         run: |
           docker build \
             -f Dockerfile \
-            -t joeuzo/pdf-gpt:test-${{ github.sha }} \
+            -t joeuzo/pdf-gpt:test-$(echo ${{ github.sha }} | cut -c1-7) \
             .
 
 
@@ -34,7 +34,7 @@ jobs:
         run: |
           docker build \
             -f Dockerfile \
-            -t joeuzo/pdf-gpt:${{ github.sha }} \
+            -t joeuzo/pdf-gpt:$(echo ${{ github.sha }} | cut -c1-7) \
             -t joeuzo/pdf-gpt:latest \
             .
 
@@ -44,5 +44,5 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          docker push joeuzo/pdf-gpt:${{ github.sha }}
+          docker push joeuzo/pdf-gpt:$(echo ${{ github.sha }} | cut -c1-7)
           docker push joeuzo/pdf-gpt:latest
