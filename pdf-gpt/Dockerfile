@@ -4,6 +4,9 @@ FROM python:3.12-alpine3.20
 # Set the working directory in the container
 WORKDIR /app
 
+# Create the directory for Gradio temporary files
+RUN mkdir -p /tmp/gradio
+
 # Copy requirements 
 COPY requirements.txt /app/
 
