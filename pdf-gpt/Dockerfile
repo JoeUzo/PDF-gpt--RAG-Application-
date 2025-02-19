@@ -19,7 +19,9 @@ COPY . /app/
 # Expose the app 
 EXPOSE 5000
 
+# Set environment variables
 ENV GRADIO_TEMP_DIR="/tmp"
+ENV PYTHONUNBUFFERED=1
 
 # Run the app
 CMD ["python", "app.py"]
