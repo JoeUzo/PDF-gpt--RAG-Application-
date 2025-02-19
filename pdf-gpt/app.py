@@ -20,6 +20,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 
+temporary_directory = tempfile.TemporaryDirectory()
+
 MODEL = "gpt-3.5-turbo"
 
 template = template_
@@ -47,45 +49,45 @@ def delete_namespace(username):
 
 
 def load_pdf_and_create_store(pdf_file, username):
-    # """Load PDF and create Pinecone store under a namespace = username."""
-    # loader = PDFLoader(pdf_file.name)
-    # docs = loader.load()
-
-    # # Delete existing namespace if it exists
-    # delete_namespace(username)
-
-    # # Create Pinecone store
-    # pinecone_store = PineconeVectorStore.from_documents(
-    #     docs, embedding=embeddings, index_name=INDEX_NAME, namespace=username
-    # )
-    # return pinecone_store
-
-    # Create a persistent file path in the system temp directory (or any other directory)
-    persistent_dir = tempfile.gettempdir()  # typically '/tmp'
-    persistent_pdf = os.path.join(persistent_dir, os.path.basename(pdf_file))
-    
-    # Copy the Gradio temp file to our persistent location
-    shutil.copy(pdf_file, persistent_pdf)
-    
-    # (Optional) Verify that the file now exists
-    if not os.path.exists(persistent_pdf):
-        raise FileNotFoundError(f"Could not copy file to {persistent_pdf}")
-    
-    # Now load the PDF using the persistent file path
-    loader = PDFLoader(persistent_pdf)
+    """Load PDF and create Pinecone store under a namespace = username."""
+    loader = PDFLoader(pdf_file.name)
     docs = loader.load()
-    
-    # Remove the persistent copy if it's no longer needed
-    os.remove(persistent_pdf)
-    
+
     # Delete existing namespace if it exists
     delete_namespace(username)
-    
-    # Create and return the Pinecone store
+
+    # Create Pinecone store
     pinecone_store = PineconeVectorStore.from_documents(
         docs, embedding=embeddings, index_name=INDEX_NAME, namespace=username
     )
     return pinecone_store
+
+    # # Create a persistent file path in the system temp directory (or any other directory)
+    # persistent_dir = tempfile.gettempdir()  # typically '/tmp'
+    # persistent_pdf = os.path.join(persistent_dir, os.path.basename(pdf_file))
+    
+    # # Copy the Gradio temp file to our persistent location
+    # shutil.copy(pdf_file, persistent_pdf)
+    
+    # # (Optional) Verify that the file now exists
+    # if not os.path.exists(persistent_pdf):
+    #     raise FileNotFoundError(f"Could not copy file to {persistent_pdf}")
+    
+    # # Now load the PDF using the persistent file path
+    # loader = PDFLoader(persistent_pdf)
+    # docs = loader.load()
+    
+    # # Remove the persistent copy if it's no longer needed
+    # os.remove(persistent_pdf)
+    
+    # # Delete existing namespace if it exists
+    # delete_namespace(username)
+    
+    # # Create and return the Pinecone store
+    # pinecone_store = PineconeVectorStore.from_documents(
+    #     docs, embedding=embeddings, index_name=INDEX_NAME, namespace=username
+    # )
+    # return pinecone_store
 
 
 def chain_invoke(pinecone_store, question):

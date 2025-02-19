@@ -5,7 +5,7 @@ FROM python:3.12-alpine3.20
 WORKDIR /app
 
 # Create the directory for Gradio temporary files
-RUN mkdir -p /tmp/gradio
+RUN mkdir -p /tmp
 
 # Copy requirements 
 COPY requirements.txt /app/
@@ -18,6 +18,8 @@ COPY . /app/
 
 # Expose the app 
 EXPOSE 5000
+
+ENV GRADIO_TEMP_DIR="/tmp"
 
 # Run the app
 CMD ["python", "app.py"]
