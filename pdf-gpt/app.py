@@ -1,6 +1,6 @@
 import os
-import tempfile
-import shutil
+# import tempfile
+# import shutil
 import gradio as gr
 from dotenv import load_dotenv
 from template import template_
@@ -52,7 +52,7 @@ def load_pdf_and_create_store(pdf_file, username):
     docs = loader.load()
 
     # Delete existing namespace if it exists
-    delete_namespace(username)
+    # delete_namespace(username)
 
     # Create Pinecone store
     pinecone_store = PineconeVectorStore.from_documents(
@@ -101,6 +101,8 @@ def reset_session():
     """Clear the PDF file, chat history, and pinecone store."""
     return None, [], None
 
+def print_status(pdf_file):
+    print(pdf_file)
 
 with gr.Blocks() as app:
     gr.Markdown("# PDF GPT Chat")
@@ -121,9 +123,15 @@ with gr.Blocks() as app:
 
     # Main submit button: asks a question
     submit_btn.click(
-        fn=chat_interface,
+        fn=chat_interface, 
         inputs=[pdf_file, username, question, history_state, pinecone_state],
         outputs=[question, chatbot, pinecone_state],
+    )
+
+    submit_btn.click(
+        fn=print_status,
+        inputs=[pdf_file],
+        outputs=[]
     )
 
     # Reset session button
