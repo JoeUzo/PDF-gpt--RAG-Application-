@@ -1,6 +1,5 @@
 import os
-# import tempfile
-# import shutil
+import threading
 import gradio as gr
 from dotenv import load_dotenv
 from template import template_
@@ -22,47 +21,40 @@ INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 
 MODEL = "gpt-3.5-turbo"
 
-template = template_
-
-prompt = ChatPromptTemplate.from_template(template)
+# Initialize components
+prompt = ChatPromptTemplate.from_template(template_)
 model = ChatOpenAI(model=MODEL)
 parser = StrOutputParser()
 embeddings = OpenAIEmbeddings()
 
+# Initialize Pinecone client and index handle
 pc = Pinecone(api_key=PINECONE_API_KEY)
 pinecone_index = pc.Index(INDEX_NAME)
 
-
 def delete_namespace(username):
-    """Delete a namespace from Pinecone."""
-    # Get index statistics
+    """Delete an entire namespace from Pinecone if needed."""
     stats = pinecone_index.describe_index_stats()
-
-    # Extract namespaces
     namespaces = stats.get("namespaces", {}).keys()
-
-    # Delete namespace if it exists
-    if username in namespaces: 
+    if username in namespaces:
         pinecone_index.delete(deleteAll=True, namespace=username)
 
-
 def load_pdf_and_create_store(pdf_file, username):
-    """Load PDF and create Pinecone store under a namespace = username."""
+    """
+    Load the PDF, extract its text, and create a new Pinecone vector store under the given username namespace.
+    """
     loader = PDFLoader(pdf_file.name)
     docs = loader.load()
-
-    # Delete existing namespace if it exists
-    # delete_namespace(username)
-
-    # Create Pinecone store
+    delete_namespace(username)
     pinecone_store = PineconeVectorStore.from_documents(
-        docs, embedding=embeddings, index_name=INDEX_NAME, namespace=username
+        docs,
+        embedding=embeddings,
+        index_name=INDEX_NAME,
+        namespace=username
     )
     return pinecone_store
 
-
 def chain_invoke(pinecone_store, question):
-    """Invoke the chain with the user question."""
+    """Run the retrieval-augmented generation chain using the given vector store and user question."""
     chain = (
         {"context": pinecone_store.as_retriever(), "question": RunnablePassthrough()}
         | prompt
@@ -71,76 +63,59 @@ def chain_invoke(pinecone_store, question):
     )
     return chain.invoke(question)
 
+def chat_interface(pdf_file, username, user_message, history, pinecone_store, last_pdf_name):
+    """
+    Main chat function:
+    - If a new PDF file is uploaded (different file name), load the new vector store and clear chat history.
+    - Otherwise, use the existing vector store.
+    """
+    if pdf_file is not None:
+        if last_pdf_name is None or last_pdf_name != pdf_file.name:
+            pinecone_store = load_pdf_and_create_store(pdf_file, username)
+            history = []  # Clear the chat history for new context
+            last_pdf_name = pdf_file.name
 
-def chat_interface(pdf_file, username, user_message, history, pinecone_store):
-    # Create pinecone store if not yet created
     if pinecone_store is None:
-        if pdf_file is None:
-            return "Please upload a PDF first.", history, pinecone_store
-        pinecone_store = load_pdf_and_create_store(pdf_file, username)
+        return "Please upload a PDF first.", history, None, last_pdf_name
 
     if not user_message:
-        return "Please enter a question.", history, pinecone_store
+        return "Please enter a question.", history, pinecone_store, last_pdf_name
 
-    # Model inference
     answer = chain_invoke(pinecone_store, user_message)
-
-    # Append user message to history
     history.append({"role": "user", "content": user_message})
-    # Append assistant message to history
     history.append({"role": "assistant", "content": answer})
 
-    # Return:
-    # 1) Empty string to clear input box
-    # 2) Updated chat history
-    # 3) Updated Pinecone store
-    return "", history, pinecone_store
-
+    return "", history, pinecone_store, last_pdf_name
 
 def reset_session():
-    """Clear the PDF file, chat history, and pinecone store."""
-    return None, [], None
-
-def print_status(pdf_file):
-    print(pdf_file)
+    """Clear session state: PDF file, chat history, Pinecone store, and last PDF name."""
+    return None, [], None, None
 
 with gr.Blocks() as app:
     gr.Markdown("# PDF GPT Chat")
 
     username = gr.Textbox(label="Username", placeholder="Enter username")
     pdf_file = gr.File(label="Upload PDF", file_types=[".pdf"])
-
-    # Specify `type="messages"` to avoid the deprecation warning
     chatbot = gr.Chatbot(label="Chat", type="messages")
-
     question = gr.Textbox(label="Ask a question", placeholder="Ask me anything about the PDF file")
     submit_btn = gr.Button("Send")
     reset_btn = gr.Button("Reset Session")
 
-    # State to persist across interactions
     history_state = gr.State(value=[])
     pinecone_state = gr.State(value=None)
-
-    # Main submit button: asks a question
-    submit_btn.click(
-        fn=chat_interface, 
-        inputs=[pdf_file, username, question, history_state, pinecone_state],
-        outputs=[question, chatbot, pinecone_state],
-    )
+    last_pdf_name_state = gr.State(value=None)
 
     submit_btn.click(
-        fn=print_status,
-        inputs=[pdf_file],
-        outputs=[]
+        fn=chat_interface,
+        inputs=[pdf_file, username, question, history_state, pinecone_state, last_pdf_name_state],
+        outputs=[question, chatbot, pinecone_state, last_pdf_name_state],
     )
 
-    # Reset session button
     reset_btn.click(
         fn=reset_session,
         inputs=[],
-        outputs=[pdf_file, chatbot, pinecone_state],
+        outputs=[pdf_file, chatbot, pinecone_state, last_pdf_name_state],
     )
-
 
 if __name__ == "__main__":
     app.queue()
