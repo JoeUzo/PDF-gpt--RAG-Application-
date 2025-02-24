@@ -1,5 +1,6 @@
 import os
 import tempfile
+import shutil
 import gradio as gr
 from dotenv import load_dotenv
 from template import template_
@@ -38,26 +39,25 @@ def delete_namespace(username):
     if username in namespaces:
         pinecone_index.delete(deleteAll=True, namespace=username)
 
+def persist_pdf_file(pdf_path: str) -> str:
+    """
+    Copy the provided PDF file (given by its path) to a persistent temporary file.
+    Returns the new persistent file path.
+    """
+    temp_dir = tempfile.gettempdir()
+    new_path = os.path.join(temp_dir, os.path.basename(pdf_path))
+    shutil.copy(pdf_path, new_path)
+    return new_path
 
 def load_pdf_and_create_store(pdf_file, username):
     """
-    Save the uploaded PDF to a persistent temporary file,
-    then load and split the document and create a new Pinecone vector store
-    under the given username namespace.
+    Persist the uploaded PDF, load and split the document,
+    and create a new Pinecone vector store under the given username namespace.
     """
-    # Write the uploaded file to a temporary file on disk that won't be auto-deleted
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(pdf_file.read())
-        tmp.flush()
-        tmp_path = tmp.name
-
-    # Use the persistent temporary file path in your PDFLoader
-    loader = PDFLoader(tmp_path)
+    persistent_path = persist_pdf_file(pdf_file)
+    loader = PDFLoader(persistent_path)
     docs = loader.load()
-
-    # Clear old data for the username
     delete_namespace(username)
-    
     pinecone_store = PineconeVectorStore.from_documents(
         docs,
         embedding=embeddings,
@@ -65,7 +65,6 @@ def load_pdf_and_create_store(pdf_file, username):
         namespace=username
     )
     return pinecone_store
-
 
 def chain_invoke(pinecone_store, question):
     """Run the retrieval-augmented generation chain using the given vector store and user question."""
@@ -84,10 +83,10 @@ def chat_interface(pdf_file, username, user_message, history, pinecone_store, la
     - Otherwise, use the existing vector store.
     """
     if pdf_file is not None:
-        if last_pdf_name is None or last_pdf_name != pdf_file.name:
+        if last_pdf_name is None or last_pdf_name != pdf_file:
             pinecone_store = load_pdf_and_create_store(pdf_file, username)
             history = []  # Clear the chat history for new context
-            last_pdf_name = pdf_file.name
+            last_pdf_name = pdf_file
 
     if pinecone_store is None:
         return "Please upload a PDF first.", history, None, last_pdf_name
@@ -98,7 +97,6 @@ def chat_interface(pdf_file, username, user_message, history, pinecone_store, la
     answer = chain_invoke(pinecone_store, user_message)
     history.append({"role": "user", "content": user_message})
     history.append({"role": "assistant", "content": answer})
-
     return "", history, pinecone_store, last_pdf_name
 
 def reset_session():
@@ -107,7 +105,6 @@ def reset_session():
 
 with gr.Blocks() as app:
     gr.Markdown("# PDF GPT Chat")
-
     username = gr.Textbox(label="Username", placeholder="Enter username")
     pdf_file = gr.File(label="Upload PDF", file_types=[".pdf"])
     chatbot = gr.Chatbot(label="Chat", type="messages")
