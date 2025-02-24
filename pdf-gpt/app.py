@@ -1,5 +1,5 @@
 import os
-import threading
+import tempfile
 import gradio as gr
 from dotenv import load_dotenv
 from template import template_
@@ -38,13 +38,26 @@ def delete_namespace(username):
     if username in namespaces:
         pinecone_index.delete(deleteAll=True, namespace=username)
 
+
 def load_pdf_and_create_store(pdf_file, username):
     """
-    Load the PDF, extract its text, and create a new Pinecone vector store under the given username namespace.
+    Save the uploaded PDF to a persistent temporary file,
+    then load and split the document and create a new Pinecone vector store
+    under the given username namespace.
     """
-    loader = PDFLoader(pdf_file.name)
+    # Write the uploaded file to a temporary file on disk that won't be auto-deleted
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(pdf_file.read())
+        tmp.flush()
+        tmp_path = tmp.name
+
+    # Use the persistent temporary file path in your PDFLoader
+    loader = PDFLoader(tmp_path)
     docs = loader.load()
+
+    # Clear old data for the username
     delete_namespace(username)
+    
     pinecone_store = PineconeVectorStore.from_documents(
         docs,
         embedding=embeddings,
@@ -52,6 +65,7 @@ def load_pdf_and_create_store(pdf_file, username):
         namespace=username
     )
     return pinecone_store
+
 
 def chain_invoke(pinecone_store, question):
     """Run the retrieval-augmented generation chain using the given vector store and user question."""
