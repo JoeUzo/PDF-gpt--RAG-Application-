@@ -1,5 +1,6 @@
 import os
 import tempfile
+import shutil
 import gradio as gr
 from dotenv import load_dotenv
 from template import template_
@@ -42,18 +43,29 @@ def delete_namespace(username):
 def persist_pdf_file(pdf_path: str) -> str:
     """
     Read the file at pdf_path and write its content to a new persistent file in the temporary directory.
+    If the ephemeral file is not found (e.g. it was deleted), check if the persistent file exists.
     Returns the new file path.
     """
-    # Read the file content
-    with open(pdf_path, 'rb') as f:
-        data = f.read()
-    # Define a new persistent file path using the system temporary directory
     temp_dir = tempfile.gettempdir()
-    new_path = os.path.join(temp_dir, os.path.basename(pdf_path))
-    # Write the data to the new file
-    with open(new_path, 'wb') as out:
-        out.write(data)
-    return new_path
+    persistent_path = os.path.join(temp_dir, os.path.basename(pdf_path))
+    
+    try:
+        # Try reading from the ephemeral file
+        with open(pdf_path, 'rb') as f:
+            data = f.read()
+        # Write data to the persistent file
+        with open(persistent_path, 'wb') as out:
+            out.write(data)
+        return persistent_path
+    except FileNotFoundError:
+        # If the ephemeral file is missing, check if the persistent copy exists
+        if os.path.exists(persistent_path):
+            return persistent_path
+        else:
+            # If neither file exists, raise an error or handle accordingly
+            raise FileNotFoundError(
+                f"Ephemeral file {pdf_path} not found and no persistent copy exists at {persistent_path}"
+            )
 
 
 def load_pdf_and_create_store(pdf_file, username):
