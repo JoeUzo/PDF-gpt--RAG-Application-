@@ -1,6 +1,5 @@
 import os
 import tempfile
-import shutil
 import gradio as gr
 from dotenv import load_dotenv
 from template import template_
@@ -39,15 +38,23 @@ def delete_namespace(username):
     if username in namespaces:
         pinecone_index.delete(deleteAll=True, namespace=username)
 
+
 def persist_pdf_file(pdf_path: str) -> str:
     """
-    Copy the provided PDF file (given by its path) to a persistent temporary file.
-    Returns the new persistent file path.
+    Read the file at pdf_path and write its content to a new persistent file in the temporary directory.
+    Returns the new file path.
     """
+    # Read the file content
+    with open(pdf_path, 'rb') as f:
+        data = f.read()
+    # Define a new persistent file path using the system temporary directory
     temp_dir = tempfile.gettempdir()
     new_path = os.path.join(temp_dir, os.path.basename(pdf_path))
-    shutil.copy(pdf_path, new_path)
+    # Write the data to the new file
+    with open(new_path, 'wb') as out:
+        out.write(data)
     return new_path
+
 
 def load_pdf_and_create_store(pdf_file, username):
     """
