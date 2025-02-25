@@ -39,23 +39,12 @@ def delete_namespace(username):
     if username in namespaces:
         pinecone_index.delete(deleteAll=True, namespace=username)
 
-def persist_pdf_file(pdf_path: str) -> str:
-    """
-    Copy the provided PDF file (given by its path) to a persistent temporary file.
-    Returns the new persistent file path.
-    """
-    temp_dir = tempfile.gettempdir()
-    new_path = os.path.join(temp_dir, os.path.basename(pdf_path))
-    shutil.copy(pdf_path, new_path)
-    return new_path
 
 def load_pdf_and_create_store(pdf_file, username):
     """
-    Persist the uploaded PDF, load and split the document,
-    and create a new Pinecone vector store under the given username namespace.
+    Load the PDF, extract its text, and create a new Pinecone vector store under the given username namespace.
     """
-    persistent_path = persist_pdf_file(pdf_file)
-    loader = PDFLoader(persistent_path)
+    loader = PDFLoader(pdf_file.name)
     docs = loader.load()
     delete_namespace(username)
     pinecone_store = PineconeVectorStore.from_documents(
