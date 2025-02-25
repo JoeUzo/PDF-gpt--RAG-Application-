@@ -39,34 +39,15 @@ def delete_namespace(username):
     if username in namespaces:
         pinecone_index.delete(deleteAll=True, namespace=username)
 
-
 def persist_pdf_file(pdf_path: str) -> str:
     """
-    Read the file at pdf_path and write its content to a new persistent file in the temporary directory.
-    If the ephemeral file is not found (e.g. it was deleted), check if the persistent file exists.
-    Returns the new file path.
+    Copy the provided PDF file (given by its path) to a persistent temporary file.
+    Returns the new persistent file path.
     """
     temp_dir = tempfile.gettempdir()
-    persistent_path = os.path.join(temp_dir, os.path.basename(pdf_path))
-    
-    try:
-        # Try reading from the ephemeral file
-        with open(pdf_path, 'rb') as f:
-            data = f.read()
-        # Write data to the persistent file
-        with open(persistent_path, 'wb') as out:
-            out.write(data)
-        return persistent_path
-    except FileNotFoundError:
-        # If the ephemeral file is missing, check if the persistent copy exists
-        if os.path.exists(persistent_path):
-            return persistent_path
-        else:
-            # If neither file exists, raise an error or handle accordingly
-            raise FileNotFoundError(
-                f"Ephemeral file {pdf_path} not found and no persistent copy exists at {persistent_path}"
-            )
-
+    new_path = os.path.join(temp_dir, os.path.basename(pdf_path))
+    shutil.copy(pdf_path, new_path)
+    return new_path
 
 def load_pdf_and_create_store(pdf_file, username):
     """
@@ -149,4 +130,4 @@ with gr.Blocks() as app:
 
 if __name__ == "__main__":
     app.queue()
-    app.launch(server_name="0.0.0.0", server_port=5000)
+    app.launch(server_name="0.0.0.0", server_port=5002)
