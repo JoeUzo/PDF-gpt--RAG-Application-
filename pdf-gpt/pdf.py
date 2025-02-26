@@ -1,6 +1,7 @@
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+
 class PDFLoader:
     def __init__(self, pdf_doc: str, chunk_size: int = 1000, chunk_overlap: int = 200):
         self.pdf_doc = pdf_doc
@@ -12,4 +13,3 @@ class PDFLoader:
         docs = self.loader.load()
         splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
         return splitter.split_documents(docs)
-

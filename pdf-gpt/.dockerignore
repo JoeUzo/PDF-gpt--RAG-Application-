@@ -1,39 +1,36 @@
-#  Python / Bytecode
-__pycache__/
+# Exclude Python cache and build artifacts
+__pycache__
 *.pyc
 *.pyo
 *.pyd
-*.py.class
+*.so
 
-#  Virtual Environments
-.venv/
-venv/
-env/
+# Exclude virtual environments
+.venv
+env
+venv
 
-#  Environment / Secrets
-.env
-*.env
-
-#  Spotipy / Other Library Caches
-.cache/
-.cache-*
-.cache
-
-#  Log Files
+# Exclude logs and temporary files
 *.log
+/tmp
 
-#  OS / Editor Files
-.DS_Store
-Thumbs.db
-.idea/
+# Exclude IDE configuration files
+.idea
+.vscode
 
-#  Git
+# Exclude Git files
 .git
 .gitignore
 
-#  Tests
-tests/
-test*.py
+# Exclude Dockerfile and docker-compose files if not needed in image (optional)
+# Dockerfile
+# docker-compose.yml
 
-# Ignore Github Actions
-.github/
+# Exclude local environment files
+.env
+.env.*
+
+# Exclude test files and directories
+tests
+test*.py
+*.md

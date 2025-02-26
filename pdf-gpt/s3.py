@@ -15,6 +15,7 @@ def save_chat_history_to_s3(username, history):
     data = json.dumps(history)
     s3_client.put_object(Bucket=BUCKET_NAME, Key=key, Body=data)
 
+
 def load_chat_history_from_s3(username):
     """Load the user's chat history from S3."""
     key = f"{username}/chat_history.json"
