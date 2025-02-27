@@ -23,6 +23,8 @@ model = ChatOpenAI(model=MODEL)
 parser = StrOutputParser()
 embeddings = OpenAIEmbeddings()
 
+cached_chain = None
+
 
 def load_pdf_and_create_store(pdf_file):
     """
@@ -44,18 +46,16 @@ def load_pdf_and_create_store(pdf_file):
     return vector_store
 
 
-def chain_invoke(vector_store, question, history):
+def create_chain(vector_store):
     """
-    Run the retrieval-augmented generation chain to produce an answer.
-    
+    Create a retrieval-augmented generation chain.
+
     Parameters:
         vector_store: In-memory vector store containing document chunks.
-        question (str): The user's query.
-        
-    Returns:
-        answer (str): The generated answer.
     """
-    chain = (
+    global cached_chain
+
+    cached_chain = (
         {
             # Use a lambda to extract the question for retrieval
             "context": RunnableLambda(lambda inputs: vector_store.as_retriever().get_relevant_documents(inputs["question"])),
@@ -68,12 +68,23 @@ def chain_invoke(vector_store, question, history):
     )
 
 
-    con_history = "\n".join([f"{item['role']}: {item['content']}" for item in history])
+def chain_invoke(question, history):
+    """
+    Run the retrieval-augmented generation chain to produce an answer.
+    
+    Parameters:
+        question (str): The user's query.
+        history (list): Previous chat history.
+        
+    Returns:
+        answer (str): The generated answer.
+    """
 
-    #return chain.invoke(question, con_history)
-    return chain.invoke({
+    convo_history = "\n".join([f"{item['role']}: {item['content']}" for item in history])
+
+    return cached_chain.invoke({
     "question": question,
-    "conversation_history": con_history
+    "conversation_history": convo_history
     })
 
 
@@ -97,11 +108,12 @@ def chat_interface(pdf_file, user_message, history, vector_store):
         if pdf_file is None:
             return "Please upload a PDF first.", history, vector_store
         vector_store = load_pdf_and_create_store(pdf_file)
+        create_chain(vector_store)
 
     if not user_message:
         return "Please enter a question.", history, vector_store
 
-    answer = chain_invoke(vector_store, user_message, history)
+    answer = chain_invoke(user_message, history)
     history.append({"role": "user", "content": user_message})
     history.append({"role": "assistant", "content": answer})
     return "", history, vector_store
