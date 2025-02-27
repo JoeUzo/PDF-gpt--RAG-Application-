@@ -1,7 +1,9 @@
 import os
 import gradio as gr
+import fitz
+from PIL import Image
 from dotenv import load_dotenv
-from template import template_
+from template import *
 from pdf import PDFLoader
 from langchain_openai.chat_models import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
@@ -13,18 +15,34 @@ from langchain_community.vectorstores import DocArrayInMemorySearch
 # Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")  # Not used with DocArray
 
 DEFAULT_MODEL = "gpt-3.5-turbo"
 current_model_name = DEFAULT_MODEL
 model = None
 
 # Initialize LangChain components
-prompt = ChatPromptTemplate.from_template(template_)
+prompt = ChatPromptTemplate.from_template(chat_template)
 parser = StrOutputParser()
 embeddings = OpenAIEmbeddings()
 
 cached_chain = None
+
+
+def get_img(pdf_file):
+    """
+    Extract the first page of the PDF and convert it to an image.
+
+    Parameters:
+        pdf_file (gr.File): The uploaded PDF file.
+
+    Returns:
+        img (PIL.Image): The first page of the PDF as an image.
+    """
+    pdf_document = fitz.open(pdf_file.name)
+    page = pdf_document.load_page(0)
+    pix = page.get_pixmap()
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    return img
 
 
 def load_pdf_and_create_store(pdf_file):
@@ -136,38 +154,46 @@ def reset_session():
     Returns:
         tuple: Cleared file component, empty chat history, and None for vector store.
     """
-    return gr.update(value=None), [], None, [], DEFAULT_MODEL
+    return gr.update(value=None), [], None, [], DEFAULT_MODEL, gr.update(value=None)
 
 
-with gr.Blocks() as app:
-    gr.Markdown("# PDF GPT Chat")
+with gr.Blocks(css=custom_css) as app:
+    with gr.Column(elem_id="container"):
+        gr.Markdown("# PDF GPT Chat")
 
-    model_choice = gr.Dropdown(
-        choices=["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o"],
-        value=DEFAULT_MODEL,
-        label="Select Model"
-    )
+        model_choice = gr.Dropdown(
+            choices=["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o"],
+            value=DEFAULT_MODEL,
+            label="Select Model"
+        )
 
-    pdf_file = gr.File(label="Upload PDF", file_types=[".pdf"])
-    chatbot = gr.Chatbot(label="Chat", type="messages")
-    question = gr.Textbox(label="Ask a question", placeholder="Ask me anything about the PDF file")
-    submit_btn = gr.Button("Send")
-    reset_btn = gr.Button("Reset Session")
+        pdf_file = gr.File(label="Upload PDF", file_types=[".pdf"], height=150)
+        show_img = gr.Image(label='Upload PDF', height=250)
+        chatbot = gr.Chatbot(label="Chat", type="messages")
+        question = gr.Textbox(label="Ask a question", placeholder="Ask me anything about the PDF file")
+        submit_btn = gr.Button("Send")
+        reset_btn = gr.Button("Reset Session")
 
-    history_state = gr.State(value=[])
-    vector_store_state = gr.State(value=None)
+        history_state = gr.State(value=[])
+        vector_store_state = gr.State(value=None)
 
-    submit_btn.click(
-        fn=chat_interface,
-        inputs=[model_choice, pdf_file, question, history_state, vector_store_state],
-        outputs=[question, chatbot, vector_store_state],
-    )
+        pdf_file.upload(
+            fn=get_img,
+            inputs=[pdf_file],
+            outputs=[show_img]
+        )
 
-    reset_btn.click(
-        fn=reset_session,
-        inputs=[],
-        outputs=[pdf_file, chatbot, vector_store_state, history_state, model_choice],
-    )
+        submit_btn.click(
+            fn=chat_interface,
+            inputs=[model_choice, pdf_file, question, history_state, vector_store_state],
+            outputs=[question, chatbot, vector_store_state],
+        )
+
+        reset_btn.click(
+            fn=reset_session,
+            inputs=[],
+            outputs=[pdf_file, chatbot, vector_store_state, history_state, model_choice, show_img],
+        )
 
 if __name__ == "__main__":
     app.queue()

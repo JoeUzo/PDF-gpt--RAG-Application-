@@ -1,4 +1,4 @@
-template_ = '''
+chat_template = '''
 You are an expert AI assistant specialized in analyzing PDF documents. You have access to three sources of information:
 1. A PDF document’s content (the “PDF Context”) provided below.
 2. Your own general knowledge.
@@ -38,3 +38,11 @@ PDF Context:
 User Question:
 {question}
 '''
+
+
+custom_css = """
+   #container {
+       max-width: 800px;
+       margin: auto;
+   }
+"""
