@@ -7,7 +7,7 @@ from langchain_openai.chat_models import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain_openai.embeddings import OpenAIEmbeddings
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_community.vectorstores import DocArrayInMemorySearch
 
 # Load environment variables
@@ -44,7 +44,7 @@ def load_pdf_and_create_store(pdf_file):
     return vector_store
 
 
-def chain_invoke(vector_store, question):
+def chain_invoke(vector_store, question, history):
     """
     Run the retrieval-augmented generation chain to produce an answer.
     
@@ -56,12 +56,25 @@ def chain_invoke(vector_store, question):
         answer (str): The generated answer.
     """
     chain = (
-            {"context": vector_store.as_retriever(), "question": RunnablePassthrough()}
-            | prompt
-            | model
-            | parser
+        {
+            # Use a lambda to extract the question for retrieval
+            "context": RunnableLambda(lambda inputs: vector_store.as_retriever().get_relevant_documents(inputs["question"])),
+            "question": RunnablePassthrough(),
+            "conversation_history": RunnablePassthrough()
+        }
+        | prompt
+        | model
+        | parser
     )
-    return chain.invoke(question)
+
+
+    con_history = "\n".join([f"{item['role']}: {item['content']}" for item in history])
+
+    #return chain.invoke(question, con_history)
+    return chain.invoke({
+    "question": question,
+    "conversation_history": con_history
+    })
 
 
 def chat_interface(pdf_file, user_message, history, vector_store):
@@ -88,7 +101,7 @@ def chat_interface(pdf_file, user_message, history, vector_store):
     if not user_message:
         return "Please enter a question.", history, vector_store
 
-    answer = chain_invoke(vector_store, user_message)
+    answer = chain_invoke(vector_store, user_message, history)
     history.append({"role": "user", "content": user_message})
     history.append({"role": "assistant", "content": answer})
     return "", history, vector_store
@@ -129,4 +142,4 @@ with gr.Blocks() as app:
 
 if __name__ == "__main__":
     app.queue()
-    app.launch(server_name="0.0.0.0", server_port=5000)
+    app.launch(server_name="0.0.0.0", server_port=5001)

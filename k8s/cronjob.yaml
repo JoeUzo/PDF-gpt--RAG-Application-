@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pdf-gpt-pvc-cleanup
+spec:
+  # This schedule runs the cleanup job at the top of every hour.
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cleanup
+            image: alpine:latest
+            command:
+              - /bin/sh
+              - -c
+              # Delete files in /tmp older than 60 minutes.
+              - "find /tmp -type f -mmin +60 -delete"
+            volumeMounts:
+              - name: tmp-volume
+                mountPath: /tmp
+          restartPolicy: OnFailure
+          volumes:
+            - name: tmp-volume
+              persistentVolumeClaim:
+                claimName: pdf-gpt-pvc

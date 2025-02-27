@@ -2,7 +2,6 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: pdf-gpt
-  # namespace: def
 spec:
   replicas: 2
   strategy:
@@ -45,11 +44,12 @@ spec:
             timeoutSeconds: 10
           resources:
             limits:
-              cpu: "0.5"
+              cpu: "500m"
               memory: "512Mi"
             requests:
               cpu: "250m"
               memory: "256Mi"
       volumes:
         - name: tmp-volume
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: pdf-gpt-pvc
