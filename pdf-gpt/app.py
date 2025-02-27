@@ -143,7 +143,7 @@ with gr.Blocks() as app:
     gr.Markdown("# PDF GPT Chat")
 
     model_choice = gr.Dropdown(
-        choices=["gpt-3.5-turbo", "gpt-4o"],
+        choices=["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o"],
         value=DEFAULT_MODEL,
         label="Select Model"
     )
@@ -171,4 +171,4 @@ with gr.Blocks() as app:
 
 if __name__ == "__main__":
     app.queue()
-    app.launch(server_name="0.0.0.0", server_port=5001)
+    app.launch(server_name="0.0.0.0", server_port=5000)
