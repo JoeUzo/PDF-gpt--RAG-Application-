@@ -15,11 +15,12 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")  # Not used with DocArray
 
-MODEL = "gpt-3.5-turbo"
+DEFAULT_MODEL = "gpt-3.5-turbo"
+current_model_name = DEFAULT_MODEL
+model = None
 
 # Initialize LangChain components
 prompt = ChatPromptTemplate.from_template(template_)
-model = ChatOpenAI(model=MODEL)
 parser = StrOutputParser()
 embeddings = OpenAIEmbeddings()
 
@@ -58,7 +59,7 @@ def create_chain(vector_store):
     cached_chain = (
         {
             # Use a lambda to extract the question for retrieval
-            "context": RunnableLambda(lambda inputs: vector_store.as_retriever().get_relevant_documents(inputs["question"])),
+            "context": RunnableLambda(lambda inputs: vector_store.as_retriever().invoke(inputs["question"])),
             "question": RunnablePassthrough(),
             "conversation_history": RunnablePassthrough()
         }
@@ -88,7 +89,7 @@ def chain_invoke(question, history):
     })
 
 
-def chat_interface(pdf_file, user_message, history, vector_store):
+def chat_interface(model_choice, pdf_file, user_message, history, vector_store):
     """
     Main chat function:
     - If no vector store exists (i.e. a new PDF is uploaded), load the PDF and build a new vector store,
@@ -104,6 +105,15 @@ def chat_interface(pdf_file, user_message, history, vector_store):
     Returns:
         tuple: Updated question (cleared), chat history, and vector store.
     """
+    global model, current_model_name
+
+    if model is None or model_choice != current_model_name:
+        model = ChatOpenAI(model=model_choice)
+        current_model_name = model_choice
+
+        if vector_store != None:
+            create_chain(vector_store)
+  
     if vector_store is None:
         if pdf_file is None:
             return "Please upload a PDF first.", history, vector_store
@@ -126,11 +136,18 @@ def reset_session():
     Returns:
         tuple: Cleared file component, empty chat history, and None for vector store.
     """
-    return gr.update(value=None), [], None, []
+    return gr.update(value=None), [], None, [], DEFAULT_MODEL
 
 
 with gr.Blocks() as app:
     gr.Markdown("# PDF GPT Chat")
+
+    model_choice = gr.Dropdown(
+        choices=["gpt-3.5-turbo", "gpt-4o"],
+        value=DEFAULT_MODEL,
+        label="Select Model"
+    )
+
     pdf_file = gr.File(label="Upload PDF", file_types=[".pdf"])
     chatbot = gr.Chatbot(label="Chat", type="messages")
     question = gr.Textbox(label="Ask a question", placeholder="Ask me anything about the PDF file")
@@ -142,14 +159,14 @@ with gr.Blocks() as app:
 
     submit_btn.click(
         fn=chat_interface,
-        inputs=[pdf_file, question, history_state, vector_store_state],
+        inputs=[model_choice, pdf_file, question, history_state, vector_store_state],
         outputs=[question, chatbot, vector_store_state],
     )
 
     reset_btn.click(
         fn=reset_session,
         inputs=[],
-        outputs=[pdf_file, chatbot, vector_store_state, history_state],
+        outputs=[pdf_file, chatbot, vector_store_state, history_state, model_choice],
     )
 
 if __name__ == "__main__":
