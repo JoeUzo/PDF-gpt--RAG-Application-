@@ -1,4 +1,4 @@
-# Using a lightweight Python base image
+# Python base image
 FROM python:3.12-alpine3.20
 
 # Set the working directory in the container

@@ -22,9 +22,9 @@ venv
 .git
 .gitignore
 
-# Exclude Dockerfile and docker-compose files if not needed in image (optional)
-# Dockerfile
-# docker-compose.yml
+# Exclude Dockerfile and docker-compose files if not needed in image
+Dockerfile
+docker-compose.yml
 
 # Exclude local environment files
 .env
