@@ -33,3 +33,11 @@ test*.py
 # Ignore Github Actions
 .github/
 pdf-samples/
+
+# Terraform
+terraform.tfstate
+terraform.tfvars
+*.tfstate
+*.tfvars
+*.tfstate.backup
+terraform/*
