@@ -5,8 +5,7 @@ metadata:
 spec:
   selector:
     app:  pdf-gpt
-  type:  NodePort
+  type:  ClusterIP
   ports:
     - port:  5000
       targetPort:  5000
-      nodePort:  32556 
