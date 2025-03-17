@@ -2,6 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: pdf-gpt-pvc-cleanup
+  namespace: app
 spec:
   # This schedule runs the cleanup job at the top of every hour.
   schedule: "0 * * * *"

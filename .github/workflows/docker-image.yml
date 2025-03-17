@@ -8,19 +8,19 @@ on:
 
 jobs:
 
-  # build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  #     # Using working-directory so Docker sees Dockerfile & requirements.txt
-  #     - name: Build Docker Image (Test)
-  #       working-directory: pdf-gpt/
-  #       run: |
-  #         docker build \
-  #           -f Dockerfile \
-  #           -t joeuzo/pdf-gpt:test-$(echo ${{ github.sha }} | cut -c1-7) \
-  #           .
+      # Using working-directory so Docker sees Dockerfile & requirements.txt
+      - name: Build Docker Image (Test)
+        working-directory: pdf-gpt/
+        run: |
+          docker build \
+            -f Dockerfile \
+            -t joeuzo/pdf-gpt:test-$(echo ${{ github.sha }} | cut -c1-7) \
+            .
 
 
   push:
