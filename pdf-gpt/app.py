@@ -16,13 +16,6 @@ from langchain_community.vectorstores import DocArrayInMemorySearch
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Configure Gradio for distributed environment
-gr.configure(
-    analytics_enabled=False,
-    show_error=True,
-    tmp_dir="/tmp"
-)
-
 DEFAULT_MODEL = "gpt-3.5-turbo"
 current_model_name = DEFAULT_MODEL
 model = None
@@ -164,7 +157,12 @@ def reset_session():
     return gr.update(value=None), [], None, [], DEFAULT_MODEL, gr.update(value=None)
 
 
-with gr.Blocks(css=custom_css) as app:
+with gr.Blocks(
+    css=custom_css,
+    analytics_enabled=False,
+    show_error=True,
+    theme=gr.themes.Soft()
+) as app:
     with gr.Column(elem_id="container"):
         gr.Markdown("# PDF GPT Chat")
 
@@ -203,5 +201,15 @@ with gr.Blocks(css=custom_css) as app:
         )
 
 if __name__ == "__main__":
-    app.queue()
-    app.launch(server_name="0.0.0.0", server_port=5000, enable_queue=True)
+    app.queue(concurrency_count=8)  # Allow multiple concurrent requests
+    app.launch(
+        server_name="0.0.0.0",
+        server_port=5000,
+        share=False,
+        root_path="/",
+        ssl_verify=False,
+        show_error=True,
+        max_threads=40,
+        file_directories=["/tmp"],
+        quiet=True
+    )
