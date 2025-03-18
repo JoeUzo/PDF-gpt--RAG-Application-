@@ -157,12 +157,7 @@ def reset_session():
     return gr.update(value=None), [], None, [], DEFAULT_MODEL, gr.update(value=None)
 
 
-with gr.Blocks(
-    css=custom_css,
-    analytics_enabled=False,
-    show_error=True,
-    theme=gr.themes.Soft()
-) as app:
+with gr.Blocks(css=custom_css) as app:
     with gr.Column(elem_id="container"):
         gr.Markdown("# PDF GPT Chat")
 
@@ -201,15 +196,12 @@ with gr.Blocks(
         )
 
 if __name__ == "__main__":
-    app.queue(concurrency_count=8)  # Allow multiple concurrent requests
+    app.queue(concurrency_count=8)
     app.launch(
         server_name="0.0.0.0",
         server_port=5000,
         share=False,
-        root_path="/",
-        ssl_verify=False,
         show_error=True,
-        max_threads=40,
-        file_directories=["/tmp"],
-        quiet=True
+        root_path="/",
+        enable_queue=True
     )
