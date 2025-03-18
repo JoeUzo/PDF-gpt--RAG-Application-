@@ -16,6 +16,13 @@ from langchain_community.vectorstores import DocArrayInMemorySearch
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Configure Gradio for distributed environment
+gr.configure(
+    analytics_enabled=False,
+    show_error=True,
+    tmp_dir="/tmp"
+)
+
 DEFAULT_MODEL = "gpt-3.5-turbo"
 current_model_name = DEFAULT_MODEL
 model = None
@@ -197,4 +204,4 @@ with gr.Blocks(css=custom_css) as app:
 
 if __name__ == "__main__":
     app.queue()
-    app.launch(server_name="0.0.0.0", server_port=5000)
+    app.launch(server_name="0.0.0.0", server_port=5000, enable_queue=True)

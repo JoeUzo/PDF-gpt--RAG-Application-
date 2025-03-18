@@ -1,12 +1,13 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name:  pdf-gpt-service
+  name: pdf-gpt-service
   namespace: app
 spec:
   selector:
-    app:  pdf-gpt
-  type:  ClusterIP
+    app: pdf-gpt
+  type: ClusterIP
+  sessionAffinity: ClientIP
   ports:
-    - port:  5000
-      targetPort:  5000
+    - port: 5000
+      targetPort: 5000
