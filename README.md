@@ -1,6 +1,6 @@
 # PDF-GPT (RAG Application)
 
-**PDF-GPT** is a Retrieval-Augmented Generation (RAG) application that lets users upload PDFs and chat with an AI model (GPT-3.5-turbo) enhanced by document context. The application also integrates (or will integrate) with Pinecone for vector storage, AWS S3 for chat history storage, and (upcoming) Terraform/Kubernetes for infrastructure automation.
+**PDF-GPT** is a Retrieval-Augmented Generation (RAG) application that allows users to upload PDFs and chat with an AI model. The system uses OpenAI GPT models and an in-memory vector store to provide contextual answers from the PDF, supplemented by the AI's general knowledge. User conversation data is persisted in Redis, ensuring session continuity across restarts or multiple replicas.
 
 ## Table of Contents
 
@@ -9,8 +9,10 @@
 - [Tech Stack](#tech-stack)  
 - [Project Structure](#project-structure)  
 - [Setup & Installation](#setup--installation)  
-  - [Local Environment](#local-environment)  
+  - [Local Development](#local-development)  
   - [Docker](#docker)  
+  - [Kubernetes](#kubernetes)  
+    - [Deploying Redis](#deploying-redis)  
 - [Usage](#usage)  
 - [Environment Variables](#environment-variables)  
 - [Roadmap / Future Plans](#roadmap--future-plans)  
@@ -22,36 +24,44 @@
 
 ## Overview
 
-This repository demonstrates how to build a **PDF-centric ChatGPT** application using **RAG (Retrieval-Augmented Generation)**. Users can upload a PDF, the text is extracted and turned into embeddings, which are stored in Pinecone. At query time, the relevant chunks from the user’s PDF are retrieved and fed into OpenAI’s GPT-3.5-turbo model to provide contextual answers. 
+This repository demonstrates how to build a **PDF-centric ChatGPT** application using **Retrieval-Augmented Generation (RAG)**. Users can upload a PDF, which the system splits and embeds into an **in-memory vector store** for quick retrieval. The user’s conversation data is stored in **Redis**, ensuring that session history remains persistent. The AI can reference the PDF context plus general knowledge, allowing it to be both PDF‐aware and more broadly informative.
 
-Currently, the app runs in a **Gradio** interface. The application also supports user sessions (via a simple username), with future plans to add:
-
-- **Secure User Authentication**  
-- **Chat History Storage** in AWS S3  
-- **Infrastructure as Code** with Terraform  
-- **Continuous Deployment** on Kubernetes  
+The application:
+- Runs in a **Gradio** UI on **port 5000** (by default).
+- Supports **multiple GPT models**: `gpt-3.5-turbo`, `gpt-4o`, and `gpt-4o-mini`.
+- Is containerized for easy deployment, with Kubernetes manifests for production use.
 
 ---
 
 ## Features
 
-1. **PDF Upload**: Users can upload a PDF file; the text is parsed and stored in Pinecone vector index.  
-2. **Contextual Chat**: Users ask questions, and the AI retrieves relevant chunks from the PDF to inform the answer.  
-3. **General Knowledge**: The AI can also leverage its general training if the question goes beyond the PDF scope.  
-4. **Namespace-based Storage**: Each user’s vectors are stored under a unique namespace in Pinecone, preventing data overlap.  
-5. **Dockerized**: There is a GitHub workflow that builds and pushes the Docker image to a public registry.  
+1. **PDF Upload & Extraction**  
+   - Users upload a PDF. The file is split into chunks and embedded in memory for retrieval.
+
+2. **Contextual Chat**  
+   - Users ask questions in a chat interface. The AI fetches relevant PDF chunks to inform responses, while also leveraging its broader knowledge.
+
+3. **Session Persistence with Redis**  
+   - Chat history (conversation text) is stored in Redis, ensuring continuity across app restarts or pod migrations.
+
+4. **Model Selection**  
+   - Users can choose among `gpt-3.5-turbo`, `gpt-4o`, and `gpt-4o-mini`.
+
+5. **Kubernetes Manifests**  
+   - Includes YAML files for deploying the app (and a script for deploying Redis) on a cluster, plus examples of sticky sessions in the Ingress for multi-replica scenarios.
 
 ---
 
 ## Tech Stack
 
-- **Python**  
-- **Gradio** for the interactive chat UI  
-- **OpenAI GPT-3.5-turbo** for language generation  
-- **Pinecone** for vector embeddings storage  
-- **(Planned) AWS S3** for user chat history  
-- **(Planned) Terraform** for cloud infrastructure provisioning  
-- **(Planned) Kubernetes** for container orchestration  
+- **Python** (Primary language)
+- **Gradio** (UI framework for chat)
+- **OpenAI GPT Models** (User‐selectable models for generation)
+- **DocArrayInMemorySearch** (In-memory vector store)
+- **Redis** (Storing conversation states)
+- **Kubernetes** (Deployment manifests)
+- **(Optional) Terraform** (For IaC in future expansions)
+- **AWS EFS** (Storage class for persistent volumes if desired)
 
 ---
 
@@ -62,109 +72,135 @@ A simplified overview of key files:
 ```
 PDF-gpt--RAG-Application-
 │
-├── .github/workflows/docker-image.yml   # CI workflow to build & push Docker images
-├── .env.example                         # Example of environment variables (for local use)
-├── Dockerfile                           # Docker build instructions
-├── app.py                               # Main Gradio app with RAG pipeline
-├── pdf.py                               # PDFLoader class for reading PDF content
-├── requirements.txt                     # Python dependencies
-├── README.md                            # This README
-└── ...
+├── app.py                     # Main Gradio application, RAG pipeline logic
+├── pdf.py                     # PDFLoader class for extracting text
+├── template.py                # Template prompt for the AI
+├── requirements.txt           # Python dependencies
+├── Dockerfile                 # Docker build instructions
+├── k8s/                       # Kubernetes YAML manifests (Deployment, Service, Ingress, etc.)
+└── README.md                  # This README
 ```
 
-- **`.env.example`** – Template for environment variables.  
-- **`app.py`** – Core application logic using Gradio, Pinecone, and OpenAI.  
-- **`pdf.py`** – Contains the `PDFLoader` class for extracting text from PDF files.
+- **`app.py`** – Core application logic (Gradio + retrieval chain).
+- **`pdf.py`** – PDFLoader utility for reading/parsing PDF content.
+- **`template.py`** – The specialized prompt template for contextual AI responses.
+- **`k8s/`** – Example manifests for running the app on Kubernetes (Deployment, Service, Ingress).
+- **`deploy-redis.sh`** – Script to install Redis on the cluster using Helm with an EFS-based storage class.
 
 ---
 
 ## Setup & Installation
 
-### Local Environment
+### Local Development
 
 1. **Clone the Repository**  
    ```bash
    git clone https://github.com/JoeUzo/PDF-gpt--RAG-Application-.git
    cd PDF-gpt--RAG-Application-
    ```
-2. **Create a Virtual Environment (Optional but Recommended)**  
+
+2. **Create a Virtual Environment (Optional)**  
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # Linux/Mac
    .venv\Scripts\activate     # Windows
    ```
+
 3. **Install Dependencies**  
    ```bash
    pip install --upgrade pip
    pip install -r requirements.txt
    ```
+
 4. **Configure Environment Variables**  
-   - Copy `.env.example` to `.env` and fill in your credentials. (See [Environment Variables](#environment-variables) below.)
+   - Copy `.env.example` to `.env` and fill in your credentials. See [Environment Variables](#environment-variables).
+
 5. **Run the App**  
    ```bash
    python app.py
    ```
-   The Gradio interface will start on `http://localhost:7860`.
+   It will start on `http://localhost:5000` by default.
 
 ### Docker
 
-1. **Pull the Public Image** (if you don’t want to build locally):  
+1. **Pull or Build the Image**  
    ```bash
    docker pull joeuzo/pdf-gpt:latest
    ```
+   or build locally:
+   ```bash
+   docker build -t pdf-gpt:latest .
+   ```
+
 2. **Run the Container**  
    ```bash
-   docker run -it --rm -p 7860:7860 \
+   docker run -it --rm -p 5000:5000 \
      -e OPENAI_API_KEY=<your-openai-key> \
-     -e PINECONE_API_KEY=<your-pinecone-key> \
-     -e INDEX_NAME=<your-pinecone-index> \
-     -e BUCKET_NAME=<your-s3-bucket> \ 
-     joeuzo/pdf-gpt:latest
+     -e REDIS_HOST=<your-redis-host> \
+     -e REDIS_PORT=6379 \
+     pdf-gpt:latest
    ```
-   Then access the app at `http://localhost:7860`.
+   Access the app at `http://localhost:5000`.
+
+### Kubernetes
+
+1. **Deploy Redis**  
+   - Use the provided `deploy-redis.sh` script or Helm directly to install a Redis instance, possibly in a `redis` namespace with EFS storage. Example:
+     ```bash
+     ./deploy-redis.sh
+     ```
+   - Confirm Redis is up and running: `kubectl get pods -n redis`
+
+2. **Deploy the App**  
+   - Adjust the `k8s/` manifests (Deployment, Service, Ingress) to your environment. Ensure:
+     - `REDIS_HOST` is set to your Redis Service DNS (e.g. `my-redis.redis.svc.cluster.local`)
+     - `REDIS_PORT` is `6379` (or your chosen port)
+   - Apply the manifests:
+     ```bash
+     kubectl apply -f k8s/
+     ```
+3. **Expose via Ingress**  
+   - By default, the Ingress uses cookie-based sticky sessions to ensure users remain pinned to a single pod if you scale the deployment.  
+   - Access the application via your configured domain or Load Balancer address.
 
 ---
 
 ## Usage
 
-1. **Enter Username**: Provide a username (this will be your Pinecone namespace).  
-2. **Upload PDF**: Attach a PDF file.  
-3. **Ask Questions**: Type your question in the chat box. The AI will retrieve relevant context from the PDF to answer.  
-4. **Multiple or New PDFs**: The code is designed such that each new PDF can replace or augment what’s in your Pinecone namespace. (See `replace_pdf_in_pinecone` logic for a “replace” option.)
+1. **Upload a PDF**: Click “Upload PDF” and pick a file. The system displays a preview of the first page.  
+2. **Ask a Question**: Type into the chat box. The AI references the PDF embeddings (and general knowledge if needed) to form an answer.  
+3. **Reset Session**: Click “Reset Session” to clear your conversation in Redis and start fresh.  
+4. **Model Choice**: Pick among `gpt-3.5-turbo`, `gpt-4o`, or `gpt-4o-mini` from the dropdown.
 
 ---
 
 ## Environment Variables
 
-The following variables are used in `.env` or Docker environment:
-
-| Variable          | Description                                               |
-|-------------------|-----------------------------------------------------------|
-| `OPENAI_API_KEY`  | Your OpenAI API key to use GPT-3.5-turbo.                |
-| `PINECONE_API_KEY`| Your Pinecone API key.                                   |
-| `INDEX_NAME`      | Name of the Pinecone index storing vectors.              |
-| `BUCKET_NAME`     | (Future) AWS S3 bucket for storing chat history logs.    |
-
-> **Note**: The S3 logic is **not yet** implemented. Once you create the Terraform scripts and S3 bucket, you’ll integrate the code to store/retrieve chat logs.
+| Variable          | Description                                                             |
+|-------------------|-------------------------------------------------------------------------|
+| `OPENAI_API_KEY`  | Your OpenAI API key                                                     |
+| `REDIS_HOST`      | The DNS or IP of your Redis Service (e.g. `my-redis.redis.svc.cluster.local`) |
+| `REDIS_PORT`      | Redis port (usually `6379`)                                             |
 
 ---
 
 ## Roadmap / Future Plans
 
-- **Terraform**: Automate infrastructure provisioning (creating S3 bucket, IAM roles, etc.).  
-- **Kubernetes (K8s)**: Container orchestration for scalable deployments.  
-- **User Authentication**: Possibly integrate Flask or another method for secure login.  
-- **Full Chat History Storage**: Upload chat transcripts to S3 under `BUCKET_NAME`, retrieve them on user login.  
-- **Delete / Replace Vectors**: Provide a straightforward UI to remove or replace old PDFs from a user’s namespace.
+- **Distributed Vector Store**: If you want multi-replica scaling without sticky sessions, consider moving from in-memory to a shared vector DB.  
+- **Advanced Authentication**: Add user accounts or SSO.  
+- **Terraform**: Full infrastructure automation, including EFS provisioning, secrets, etc.  
+- **Enhanced Logging & Monitoring**: Set up structured logs, Prometheus/Grafana for metrics, etc.  
+- **Autoscaling**: HPA-based scaling if the load increases.  
+- **Further Model Options**: Possibly integrate GPT-4 or other specialized LLMs.
 
 ---
 
 ## Contributing
 
 1. **Fork** the repo on GitHub  
-2. **Create** your feature branch (`git checkout -b feature/my-new-feature`)  
-3. **Commit** your changes (`git commit -m 'Add some feature'`)  
-4. **Push** to the branch (`git push origin feature/my-new-feature`)  
+2. **Create** your feature branch: `git checkout -b feature/my-new-feature`  
+3. **Commit** your changes: `git commit -m 'Add some feature'`  
+4. **Push** to the branch: `git push origin feature/my-new-feature`  
 5. **Open a Pull Request** on GitHub
 
 All contributions—bug reports, feature requests, and PRs—are welcome!
@@ -173,13 +209,11 @@ All contributions—bug reports, feature requests, and PRs—are welcome!
 
 ## License
 
-This project is available under the **MIT License**. See the [LICENSE](LICENSE) file for details. *(If you haven’t added a LICENSE file yet, consider adding one.)*
+Licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## Contact
 
 - **Author**: [JoeUzo](https://github.com/JoeUzo)  
-- **Repository**: [GitHub: PDF-gpt--RAG-Application-](https://github.com/JoeUzo/PDF-gpt--RAG-Application-)
-
-Feel free to open an issue if you have questions, or reach out via GitHub.
+- **Repository**: [PDF-gpt--RAG-Application-](https://github.com/JoeUzo/PDF-gpt--RAG-Application-)
