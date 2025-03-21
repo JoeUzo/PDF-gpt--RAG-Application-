@@ -1,26 +1,26 @@
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: app-ingress
-#   namespace: app
-#   annotations:
-#     nginx.ingress.kubernetes.io/rewrite-target: /
-#     nginx.ingress.kubernetes.io/affinity: "cookie"                # Enable cookie-based affinity
-#     nginx.ingress.kubernetes.io/session-cookie-name: "MYAPPSESSION"  # Name of the sticky cookie (optional)
-#     nginx.ingress.kubernetes.io/session-cookie-expires: "172800"  # Cookie TTL in seconds (optional, here 2 days)
-#     nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"  # Cookie max-age (optional, 2 days)
-#     nginx.ingress.kubernetes.io/affinity-mode: "persistent"      
-#     # kubernetes.io/ingress.class: "nginx"
-# spec:
-#   ingressClassName: nginx
-#   rules:
-#   - host: app.${INGRESS_HOST}
-#     http:
-#       paths:
-#       - pathType: Prefix
-#         path: "/"
-#         backend:
-#           service:
-#             name: pdf-gpt-service
-#             port:
-#               number: 5000
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pdf-gpt-service-ingress
+  namespace: app
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/affinity: "cookie"               
+    nginx.ingress.kubernetes.io/session-cookie-name: "PDFGPTSESSION" 
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"  
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"  
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"      
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  # ingressClassName: nginx
+  rules:
+  - host: app.${INGRESS_HOST}
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: pdf-gpt-service
+            port:
+              number: 5000

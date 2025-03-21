@@ -7,7 +7,7 @@ spec:
   selector:
     app: pdf-gpt
   type: ClusterIP
-  sessionAffinity: ClientIP
+  # sessionAffinity: ClientIP
   ports:
     - port: 5000
       targetPort: 5000
