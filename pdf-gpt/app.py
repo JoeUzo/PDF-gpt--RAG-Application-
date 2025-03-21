@@ -197,4 +197,10 @@ with gr.Blocks(css=custom_css) as app:
 
 if __name__ == "__main__":
     app.queue()
-    app.launch(server_name="0.0.0.0", server_port=5000)
+    app.launch(
+        server_name="0.0.0.0",
+        server_port=5000,
+        share=False,
+        show_error=True,
+        root_path="/"
+    )

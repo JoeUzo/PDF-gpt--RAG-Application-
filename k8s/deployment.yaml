@@ -2,8 +2,9 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: pdf-gpt
+  namespace: app
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
