@@ -1,0 +1,29 @@
+networks:
+  app:
+    driver: bridge
+
+services:
+  pdf-gpt:
+    container_name: pdf-gpt
+    # image: joeuzo/pdf-gpt:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - app
+    environment:
+      - REDIS_HOST=myredis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+      
+  myredis:
+    container_name: myredis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks: 
+      - app
+

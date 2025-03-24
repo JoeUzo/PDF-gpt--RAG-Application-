@@ -15,7 +15,7 @@ import redis
 import json
 import uuid
 
-# Load environment variables, e.g., OPENAI_API_KEY, REDIS_HOST, REDIS_PORT
+# Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
