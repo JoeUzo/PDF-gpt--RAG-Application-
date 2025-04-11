@@ -77,7 +77,7 @@ pipeline {
                     kubectl delete -f ./k8s/service.yaml --ignore-not-found
                     kubectl delete -f ./k8s/deployment.yaml --ignore-not-found
                     kubectl delete -f ./k8s/pvc-pv.yaml --ignore-not-found
-                    kubectl delete secret pdf-gpt-secrets -n app
+                    kubectl delete secret pdf-gpt-secrets -n app --ignore-not-found
                 '''
             }
         }
