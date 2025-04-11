@@ -8,7 +8,7 @@ pipeline {
         string(name: 'NODE_LABEL', defaultValue: 'any', description: 'Select the node to use')
     }
 
-    environment {}
+    // environment {}
     
     stages {
         stage('Checkout') {
