@@ -59,7 +59,7 @@ pipeline {
                     kubectl apply -f ./k8s/deployment.yaml
                     kubectl apply -f ./k8s/service.yaml
                     kubectl apply -f ./k8s/hpa.yaml
-                    kubectl apply -f ./k8s/nginx_ingress_rule.yaml
+                    envsubst < ./k8s/nginx_ingress_rule.yaml | kubectl apply -f -
                     kubectl apply -f ./k8s/cronjob.yaml
                 '''
             }
@@ -72,7 +72,7 @@ pipeline {
             steps {
                 sh '''
                     kubectl delete -f ./k8s/cronjob.yaml --ignore-not-found
-                    kubectl delete -f ./k8s/nginx_ingress_rule.yaml --ignore-not-found
+                    envsubst < ./k8s/nginx_ingress_rule.yaml | kubectl delete -f - --ignore-not-found
                     kubectl delete -f ./k8s/hpa.yaml --ignore-not-found
                     kubectl delete -f ./k8s/service.yaml --ignore-not-found
                     kubectl delete -f ./k8s/deployment.yaml --ignore-not-found
