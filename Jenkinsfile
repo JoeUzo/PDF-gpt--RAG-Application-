@@ -35,8 +35,13 @@ pipeline {
                     chmod +x ./k8s/*.sh
                     cd k8s
                     ./deploy-redis.sh
-                    ./secret.sh
                 '''
+                withCredentials([file(credentialsId: 'secrets_sh', variable: 'SECRET_SCRIPT')]) {
+                    sh '''
+                        chmod +x ${SECRET_SCRIPT}
+                        ${SECRET_SCRIPT}
+                    '''
+                }
             }
         }
         
