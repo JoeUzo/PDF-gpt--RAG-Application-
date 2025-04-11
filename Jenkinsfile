@@ -1,24 +1,25 @@
 pipeline {
-    agent any
-    
+    agent none
+
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'delete'], description: 'Select whether to apply or delete resources')
         string(name: 'CLUSTER_NAME', defaultValue: 'pdf-gpt-cluster', description: 'EKS Cluster Name')
         string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS Region')
+        string(name: 'NODE_LABEL', defaultValue: 'any', description: 'Select the node to use')
     }
-    
-    environment {
-        REGISTRY_CREDENTIALS = credentials('registry-credentials')
-    }
+
+    environment {}
     
     stages {
         stage('Checkout') {
+            agent { node { label "${params.NODE_LABEL}" } }
             steps {
                 checkout scm
             }
         }
         
         stage('Verify AWS & Kubectl Access') {
+            agent { node { label "${params.NODE_LABEL}" } }
             steps {
                 sh '''
                     aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}
@@ -29,6 +30,7 @@ pipeline {
         }
         
         stage('Run Bash Scripts') {
+            agent { node { label "${params.NODE_LABEL}" } }
             when {
                 expression { params.ACTION == 'apply' }
             }
@@ -43,6 +45,7 @@ pipeline {
         }
         
         stage('Apply K8s Resources') {
+            agent { node { label "${params.NODE_LABEL}" } }
             when {
                 expression { params.ACTION == 'apply' }
             }
@@ -59,6 +62,7 @@ pipeline {
         }
         
         stage('Delete K8s Resources') {
+            agent { node { label "${params.NODE_LABEL}" } }
             when {
                 expression { params.ACTION == 'delete' }
             }
@@ -75,6 +79,7 @@ pipeline {
         }
         
         stage('Verify Deployment') {
+            agent { node { label "${params.NODE_LABEL}" } }
             when {
                 expression { params.ACTION == 'apply' }
             }
@@ -124,4 +129,4 @@ pipeline {
             )
         }
     }
-} 
+}
