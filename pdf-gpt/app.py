@@ -44,7 +44,8 @@ def get_img(pdf_file):
     pdf_document = fitz.open(pdf_file.name)
     page = pdf_document.load_page(0)
     pix = page.get_pixmap()
-    return Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    return img
 
 def load_pdf_and_create_store(pdf_file):
     """
@@ -53,7 +54,11 @@ def load_pdf_and_create_store(pdf_file):
     """
     loader = PDFLoader(pdf_file.name)
     docs = loader.load()
-    return DocArrayInMemorySearch.from_documents(docs, embedding=embeddings)
+    vector_store = DocArrayInMemorySearch.from_documents(
+         docs,
+         embedding=embeddings
+     )
+    return vector_store
 
 def create_chain(vector_store):
     """
@@ -153,7 +158,7 @@ def reset_session(session_id):
     """
     clear_redis_session(session_id)
     new_session_id = str(uuid.uuid4())
-    return gr.update(value=None), [], DEFAULT_MODEL, new_session_id
+    return (gr.update(value=None), [], DEFAULT_MODEL, new_session_id)
 
 with gr.Blocks(css=custom_css) as app:
     with gr.Column(elem_id="container"):
