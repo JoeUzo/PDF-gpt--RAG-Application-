@@ -82,22 +82,22 @@ pipeline {
             }
         }
         
-    //     stage('Verify Deployment') {
-    //         when {
-    //             expression { params.ACTION == 'apply' }
-    //         }
-    //         steps {
-    //             sh '''
-    //                 # Get namespace from deployment
-    //                 NAMESPACE=$(kubectl get deployment -l app=pdf-gpt -o jsonpath='{.items[0].metadata.namespace}')
-    //                 # Wait for pods to be ready
-    //                 kubectl wait --for=condition=ready pod -l app=pdf-gpt -n ${NAMESPACE} --timeout=300s
-    //                 # Display deployment status
-    //                 kubectl get pods,svc,ingress -n ${NAMESPACE}
-    //             '''
-    //         }
-    //     }
-    // }
+        // stage('Verify Deployment') {
+        //     when {
+        //         expression { params.ACTION == 'apply' }
+        //     }
+        //     steps {
+        //         sh '''
+        //             # Get namespace from deployment
+        //             NAMESPACE=$(kubectl get deployment -l app=pdf-gpt -o jsonpath='{.items[0].metadata.namespace}')
+        //             # Wait for pods to be ready
+        //             kubectl wait --for=condition=ready pod -l app=pdf-gpt -n ${NAMESPACE} --timeout=300s
+        //             # Display deployment status
+        //             kubectl get pods,svc,ingress -n ${NAMESPACE}
+        //         '''
+        //     }
+        // }
+    }
     
     post {
         success {
@@ -132,5 +132,4 @@ pipeline {
             )
         }
     }
-}
 }
