@@ -1,5 +1,9 @@
 pipeline {
-    agent eks-node
+    agent {
+        node {
+            label 'eks-node'
+        }
+    }
 
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'delete'], description: 'Select whether to apply or delete resources')
