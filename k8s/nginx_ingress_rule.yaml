@@ -10,11 +10,11 @@ metadata:
     nginx.ingress.kubernetes.io/session-cookie-expires: "172800"  
     nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"  
     nginx.ingress.kubernetes.io/affinity-mode: "persistent"      
-    kubernetes.io/ingress.class: "nginx"
+    # kubernetes.io/ingress.class: "nginx"
 spec:
-  # ingressClassName: nginx
+  ingressClassName: nginx
   rules:
-  - host:  app.${INGRESS_HOST}
+  - host:  pdf.${INGRESS_HOST}
     http:
       paths:
       - pathType: Prefix
