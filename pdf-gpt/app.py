@@ -209,5 +209,4 @@ if __name__ == "__main__":
         server_port=5000,
         share=False,
         show_error=True,
-        root_path="/"
     )

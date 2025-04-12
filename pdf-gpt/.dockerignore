@@ -24,7 +24,7 @@ venv
 
 # Exclude Dockerfile and docker-compose files if not needed in image
 Dockerfile
-docker-compose.yml
+docker-compose.yaml
 
 # Exclude local environment files
 .env
