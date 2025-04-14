@@ -80,26 +80,10 @@ pipeline {
                     kubectl delete secret pdf-gpt-secrets -n app --ignore-not-found
                     helm uninstall my-redis -n redis
                     helm repo remove bitnami
-                    kubectl delete namespace redis
+                    kubectl delete namespace redis --ignore-not-found
                 '''
             }
         }
-        
-        // stage('Verify Deployment') {
-        //     when {
-        //         expression { params.ACTION == 'apply' }
-        //     }
-        //     steps {
-        //         sh '''
-        //             # Get namespace from deployment
-        //             NAMESPACE=$(kubectl get deployment -l app=pdf-gpt -o jsonpath='{.items[0].metadata.namespace}')
-        //             # Wait for pods to be ready
-        //             kubectl wait --for=condition=ready pod -l app=pdf-gpt -n ${NAMESPACE} --timeout=300s
-        //             # Display deployment status
-        //             kubectl get pods,svc,ingress -n ${NAMESPACE}
-        //         '''
-        //     }
-        // }
     }
     
     post {
@@ -125,12 +109,12 @@ pipeline {
             // Send email notification
             emailext (
                 subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: """<p>Build Status: ${currentBuild.currentResult}</p>
-                <p>Build URL: ${env.BUILD_URL}</p>
-                <p>Build Number: ${env.BUILD_NUMBER}</p>
-                <p>Action: ${params.ACTION}</p>
-                <p>Cluster: ${params.CLUSTER_NAME}</p>
-                <p>Region: ${params.AWS_REGION}</p>""",
+                body: """Build Status: ${currentBuild.currentResult}
+                Build URL: ${env.BUILD_URL}
+                Build Number: ${env.BUILD_NUMBER}
+                Action: ${params.ACTION}
+                Cluster: ${params.CLUSTER_NAME}
+                Region: ${params.AWS_REGION}""",
                 recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']]
             )
         }
