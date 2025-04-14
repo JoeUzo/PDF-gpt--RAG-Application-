@@ -78,6 +78,9 @@ pipeline {
                     kubectl delete -f ./k8s/deployment.yaml --ignore-not-found
                     kubectl delete -f ./k8s/pvc-pv.yaml --ignore-not-found
                     kubectl delete secret pdf-gpt-secrets -n app --ignore-not-found
+                    helm uninstall my-redis -n redis
+                    helm repo remove bitnami
+                    kubectl delete namespace redis
                 '''
             }
         }
