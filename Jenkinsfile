@@ -64,7 +64,7 @@ pipeline {
             }
              steps {
                 sh '''
-                    ./manage-redis.sh create
+                    ./k8s/manage-redis.sh create
                     kubectl apply -f ./k8s/secrets.yaml
                     kubectl apply -f ./k8s/pvc-pv.yaml
                     kubectl apply -f ./k8s/deployment.yaml
@@ -89,7 +89,7 @@ pipeline {
                     kubectl delete -f ./k8s/deployment.yaml --ignore-not-found
                     kubectl delete -f ./k8s/pvc-pv.yaml --ignore-not-found
                     kubectl delete -f ./k8s/secrets.yaml --ignore-not-found
-                    ./manage-redis.sh delete
+                    ./k8s/manage-redis.sh delete
                 '''
             }
         }
