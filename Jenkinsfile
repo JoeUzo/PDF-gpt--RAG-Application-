@@ -31,9 +31,6 @@ pipeline {
         }
         
         stage('Prepare Secrets') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
             steps {
                 sh '''
                     # Ensure that OPENAI_API_KEY is defined; exit if not
@@ -53,7 +50,6 @@ pipeline {
                     export OPENAI_API_KEY_B64=$(echo -n "${OPENAI_API_KEY}" | base64 | tr -d '\n')
                     envsubst < ./k8s/secrets.yaml.template > ./k8s/secrets.yaml
                     echo "Generated secrets.yaml:"
-                    cat ./k8s/secrets.yaml
                 '''
             }
         }
