@@ -8,7 +8,7 @@ pipeline {
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'delete'], description: 'Select whether to apply or delete resources')
         string(name: 'CLUSTER_NAME', defaultValue: 'pdf-gpt-cluster', description: 'EKS Cluster Name')
-        string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS Region')
+        string(name: 'AWS_REGION', defaultValue: 'us-east-2', description: 'AWS Region')
     }
 
     // environment {}
@@ -37,24 +37,24 @@ pipeline {
             steps {
                 sh '''
                     chmod +x ./k8s/*.sh
-                    cd k8s
-                    ./deploy-redis.sh
                 '''
-                withCredentials([file(credentialsId: 'secrets_sh', variable: 'SECRET_SCRIPT')]) {
-                    sh '''
-                        chmod +x ${SECRET_SCRIPT}
-                        ${SECRET_SCRIPT}
-                    '''
-                }
+                // Generate the secrets.yaml from the template
+                sh '''
+                    export OPENAI_API_KEY_B64=$(echo -n "${OPENAI_API_KEY}" | base64)
+                    envsubst < ./k8s/secrets.yaml.template > ./k8s/secrets.yaml
+                    cat ./k8s/secrets.yaml
+                '''
             }
         }
         
-        stage('Apply K8s Resources') {
+        stage('Apply Resources') {
             when {
                 expression { params.ACTION == 'apply' }
             }
-            steps {
+             steps {
                 sh '''
+                    ./manage-redis.sh create
+                    kubectl apply -f ./k8s/secrets.yaml
                     kubectl apply -f ./k8s/pvc-pv.yaml
                     kubectl apply -f ./k8s/deployment.yaml
                     kubectl apply -f ./k8s/service.yaml
@@ -65,7 +65,7 @@ pipeline {
             }
         }
         
-        stage('Delete K8s Resources') {
+        stage('Delete Resources') {
             when {
                 expression { params.ACTION == 'delete' }
             }
@@ -77,10 +77,8 @@ pipeline {
                     kubectl delete -f ./k8s/service.yaml --ignore-not-found
                     kubectl delete -f ./k8s/deployment.yaml --ignore-not-found
                     kubectl delete -f ./k8s/pvc-pv.yaml --ignore-not-found
-                    kubectl delete secret pdf-gpt-secrets -n app --ignore-not-found
-                    helm uninstall my-redis -n redis
-                    helm repo remove bitnami
-                    kubectl delete namespace redis --ignore-not-found
+                    kubectl delete -f ./k8s/secrets.yaml --ignore-not-found
+                    ./manage-redis.sh delete
                 '''
             }
         }
