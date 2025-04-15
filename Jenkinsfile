@@ -30,18 +30,29 @@ pipeline {
             }
         }
         
-        stage('Run Bash Scripts') {
+        stage('Prepare Secrets') {
             when {
                 expression { params.ACTION == 'apply' }
             }
             steps {
                 sh '''
+                    # Ensure that OPENAI_API_KEY is defined; exit if not
+                    if [ -z "${OPENAI_API_KEY:-}" ]; then
+                      echo "Error: OPENAI_API_KEY is not set."
+                      exit 1
+                    elif [ -z "${INGRESS_HOST}" ]; then
+                      echo "Error: INGRESS_HOST is not set."
+                      exit 1
+                    fi
+
+                    # Make k8s scripts executable
                     chmod +x ./k8s/*.sh
-                '''
-                // Generate the secrets.yaml from the template
-                sh '''
+
+                    # Generate secrets.yaml from the template by converting the API key to Base64
+                    echo "Generating secrets.yaml from secrets.yaml.template..."
                     export OPENAI_API_KEY_B64=$(echo -n "${OPENAI_API_KEY}" | base64)
                     envsubst < ./k8s/secrets.yaml.template > ./k8s/secrets.yaml
+                    echo "Generated secrets.yaml:"
                     cat ./k8s/secrets.yaml
                 '''
             }
