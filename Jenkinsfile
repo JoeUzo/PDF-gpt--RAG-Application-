@@ -50,7 +50,7 @@ pipeline {
 
                     # Generate secrets.yaml from the template by converting the API key to Base64
                     echo "Generating secrets.yaml from secrets.yaml.template..."
-                    export OPENAI_API_KEY_B64=$(echo -n "${OPENAI_API_KEY}" | base64)
+                    export OPENAI_API_KEY_B64=$(echo -n "${OPENAI_API_KEY}" | base64 | tr -d '\n')
                     envsubst < ./k8s/secrets.yaml.template > ./k8s/secrets.yaml
                     echo "Generated secrets.yaml:"
                     cat ./k8s/secrets.yaml
