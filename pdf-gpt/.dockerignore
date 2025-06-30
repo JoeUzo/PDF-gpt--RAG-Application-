@@ -34,3 +34,6 @@ docker-compose.yaml
 tests
 test*.py
 *.md
+
+# Exclude any other files or directories you want to exclude
+*.egg-info/
